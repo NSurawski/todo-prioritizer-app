@@ -1,0 +1,73 @@
+# To Do List
+
+## High Priority
+*Time-sensitive, financial, health-related*
+
+- Do taxes #task[id:task_01 status:to-do priority:high created:2026-03-05]
+- Certify benefits #task[id:task_02 status:to-do priority:high created:2026-03-05]
+- Pay credit one and citi #task[id:task_03 status:to-do priority:high created:2026-03-05]
+- Put PTO in for Dr appointment next Monday 12th #task[id:task_04 status:to-do priority:high created:2026-03-05]
+- Send new MRIs over to USC #task[id:task_05 status:to-do priority:high created:2026-03-05]
+- Ask neuro where to send MRIs to #task[id:task_06 status:to-do priority:high created:2026-03-05]
+- Call dental insurance/ask dentist about Invisalign cost #task[id:task_07 status:to-do priority:high created:2026-03-05]
+- Mail LADWP form and voter address change #task[id:task_08 status:to-do priority:high created:2026-03-05]
+- Cancel Apple TV and LinkedIn premium #task[id:task_09 status:to-do priority:high created:2026-03-05]
+- Make sure jeans get shipped #task[id:task_10 status:to-do priority:high created:2026-03-05]
+- Give Yoda flea tick med #task[id:task_11 status:to-do priority:high created:2026-03-05]
+
+## Medium Priority
+*Personal projects, shopping, people to call*
+
+- Bring Oliver Peoples glasses to store or send in #task[id:task_12 status:to-do priority:medium created:2026-03-05]
+- Buy set of 2 East Fork mugs black #task[id:task_13 status:to-do priority:medium created:2026-03-05]
+- Buy west elm or quince fitted sheet and bathroom hand towels #task[id:task_14 status:to-do priority:medium created:2026-03-05]
+- Get Bluetooth speaker or other speaker for record player and set up #task[id:task_15 status:to-do priority:medium created:2026-03-05]
+- Get Sonos speaker in bedroom set up #task[id:task_16 status:to-do priority:medium created:2026-03-05]
+- Get task rabbit to paint night tables #task[id:task_17 status:to-do priority:medium created:2026-03-05]
+- Book massage at Wi Spa #task[id:task_18 status:to-do priority:medium created:2026-03-05]
+- Call Aunt Linda #task[id:task_19 status:to-do priority:medium created:2026-03-05]
+- Call grandma #task[id:task_20 status:to-do priority:medium created:2026-03-05]
+- Call Kristi #task[id:task_21 status:to-do priority:medium created:2026-03-05]
+- Make video for Nash #task[id:task_22 status:to-do priority:medium created:2026-03-05]
+- Sell at Crossroads #task[id:task_23 status:to-do priority:medium created:2026-03-05]
+- Bring stuff to Crossroads to sell #task[id:task_24 status:to-do priority:medium created:2026-03-05]
+- Learn Claude Code - Slash's newsletter #task[id:task_25 status:to-do priority:medium created:2026-03-05]
+- Buy descaling kit with coffee #task[id:task_26 status:to-do priority:medium created:2026-03-05]
+- Finish cleaning/unpacking kitchen #task[id:task_27 status:to-do priority:medium created:2026-03-05]
+- Pedicure #task[id:task_28 status:to-do priority:medium created:2026-03-05]
+- Get Yoda groomed #task[id:task_29 status:to-do priority:medium created:2026-03-05]
+- Gym/PT #task[id:task_30 status:to-do priority:medium created:2026-03-05]
+
+## Low Priority
+*Routine chores, recurring tasks*
+
+- Check mail #task[id:task_31 status:to-do priority:low created:2026-03-05]
+- Go thru mail #task[id:task_32 status:to-do priority:low created:2026-03-05]
+- Water plants #task[id:task_33 status:to-do priority:low created:2026-03-05]
+- Rinse Nespresso #task[id:task_34 status:to-do priority:low created:2026-03-05]
+- Refill pill container and take vitamins #task[id:task_35 status:to-do priority:low created:2026-03-05]
+- Change Brita filter #task[id:task_36 status:to-do priority:low created:2026-03-05]
+- Brush Yoda's teeth #task[id:task_37 status:to-do priority:low created:2026-03-05]
+- Make Marcella Hazan sauce #task[id:task_38 status:to-do priority:low created:2026-03-05]
+- Make egg bites - freeze some #task[id:task_39 status:to-do priority:low created:2026-03-05]
+- Order weed #task[id:task_40 status:to-do priority:low created:2026-03-05]
+- Shower #task[id:task_41 status:to-do priority:low created:2026-03-05]
+- Make bed #task[id:task_42 status:to-do priority:low created:2026-03-05]
+- Do laundry #task[id:task_43 status:to-do priority:low created:2026-03-05]
+- Fold laundry #task[id:task_44 status:to-do priority:low created:2026-03-05]
+- Wash duvet cover #task[id:task_45 status:to-do priority:low created:2026-03-05]
+- Run dishwasher #task[id:task_46 status:to-do priority:low created:2026-03-05]
+- Empty dishwasher #task[id:task_47 status:to-do priority:low created:2026-03-05]
+- Vacuum #task[id:task_48 status:to-do priority:low created:2026-03-05]
+- Swiffer #task[id:task_49 status:to-do priority:low created:2026-03-05]
+- Clean bathroom #task[id:task_50 status:to-do priority:low created:2026-03-05]
+- Clean bathroom mirror/sink/toilet #task[id:task_51 status:to-do priority:low created:2026-03-05]
+- Clean oven #task[id:task_52 status:to-do priority:low created:2026-03-05]
+- Clean out fridge/freezer #task[id:task_53 status:to-do priority:low created:2026-03-05]
+- Wipe couch with leather wipes and vacuum crevices #task[id:task_54 status:to-do priority:low created:2026-03-05]
+- Take out trash #task[id:task_55 status:to-do priority:low created:2026-03-05]
+- Bring down bottle recycling #task[id:task_56 status:to-do priority:low created:2026-03-05]
+- Bring down paper recycling #task[id:task_57 status:to-do priority:low created:2026-03-05]
+- Bring down Nespresso recycling for UPS #task[id:task_58 status:to-do priority:low created:2026-03-05]
+- Print label #task[id:task_59 status:to-do priority:low created:2026-03-05]
+- Bathe Yoda #task[id:task_60 status:to-do priority:low created:2026-03-05]

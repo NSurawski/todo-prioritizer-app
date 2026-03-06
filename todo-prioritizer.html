@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>To Do Prioritizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
+          colors: {
+            pine: { 50: '#f0faf0', 100: '#d4edda', 200: '#b8dfc2', 300: '#95c9a3', 400: '#6aab7b', 500: '#4a9060', 600: '#357a4a', 700: '#2d6a4f', 800: '#1b4332', 900: '#143528' }
+          },
+          boxShadow: {
+            'card': '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)',
+            'card-hover': '0 4px 12px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.05)',
+            'panel': '0 8px 30px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)',
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #357a4a; }
+    .slide-in { animation: slideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeIn 0.2s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    input[type="range"] { -webkit-appearance: none; height: 5px; border-radius: 99px; background: linear-gradient(to right, #d4edda, #b8dfc2); }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #357a4a; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.15); transition: transform 0.15s; }
+    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+    input[type="range"]::-webkit-slider-thumb:active { transform: scale(0.95); }
+    @keyframes confettiFall {
+      0% { opacity: 1; transform: translateY(0) translateX(0) rotate(0deg); }
+      100% { opacity: 0; transform: translateY(105vh) translateX(var(--drift, 0px)) rotate(var(--spin, 360deg)); }
+    }
+    ::selection { background: #d4edda; color: #1b4332; }
+    input::placeholder { color: #95c9a3; }
+    select { color: #357a4a; }
+  </style>
+</head>
+<body class="bg-emerald-50 min-h-screen antialiased">
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useMemo, useCallback } = React;
+
+    function uuid() {
+      return crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
+
+    const URGENCY_MAP = { today: 5, "3days": 4, thisweek: 3, thismonth: 2, none: 1 };
+    const DEADLINE_LABELS = { today: "Today", "3days": "Within 3 days", thisweek: "This week", thismonth: "This month", none: "No deadline" };
+    const PRESETS = {
+      Balanced: [40, 40, 20],
+      "Deadline-driven": [60, 30, 10],
+      "Impact-first": [20, 70, 10],
+      "Quick wins": [20, 30, 50],
+    };
+
+    function calcScore(task, weights) {
+      const [w1, w2, w3] = weights.map(w => w / 100);
+      const urgency = URGENCY_MAP[task.deadline] || 1;
+      return urgency * w1 + task.importance * w2 + (6 - task.effort) * w3;
+    }
+
+    function scoreToLabel(score) {
+      if (score >= 3.5) return "high";
+      if (score >= 2.0) return "med";
+      return "low";
+    }
+
+    function generateReasoning(task, weights) {
+      const [w1, w2, w3] = weights.map(w => w / 100);
+      const uScore = URGENCY_MAP[task.deadline] * w1;
+      const iScore = task.importance * w2;
+      const eScore = (6 - task.effort) * w3;
+      const scores = [
+        { label: "Due soon", val: uScore },
+        { label: "High impact", val: iScore },
+        { label: "Quick win", val: eScore },
+      ];
+      scores.sort((a, b) => b.val - a.val);
+      if (scores[0].val === scores[1].val) {
+        return scores[0].label + " + " + scores[1].label.toLowerCase();
+      }
+      return scores[0].label + " dominates priority";
+    }
+
+    // --- Dot selector component ---
+    function DotSelector({ value, onChange, label, activeColor = "bg-pine-500" }) {
+      return (
+        <div className="flex items-center gap-3">
+          <span className="text-[13px] font-medium text-pine-500 w-24">{label}</span>
+          <div className="flex gap-1.5">
+            {[1, 2, 3, 4, 5].map(n => (
+              <button
+                key={n}
+                onClick={() => onChange(n)}
+                className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-semibold transition-all duration-150 ${
+                  n <= value
+                    ? `${activeColor} text-white shadow-sm scale-105`
+                    : "bg-pine-50 text-pine-400 hover:bg-pine-100"
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // --- Scoring Panel ---
+    function ScoringPanel({ task, weights, onSave, onCancel }) {
+      const [deadline, setDeadline] = useState(task.deadline || "none");
+      const [importance, setImportance] = useState(task.importance || 3);
+      const [effort, setEffort] = useState(task.effort || 3);
+
+      const preview = useMemo(() => {
+        const t = { deadline, importance, effort };
+        const score = calcScore(t, weights);
+        const label = scoreToLabel(score);
+        const reasoning = generateReasoning(t, weights);
+        return { score, label, reasoning };
+      }, [deadline, importance, effort, weights]);
+
+      const labelStyles = {
+        high: { bg: "bg-red-50", border: "border-red-200", text: "text-red-600", badge: "bg-red-500" },
+        med: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-600", badge: "bg-amber-500" },
+        low: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-600", badge: "bg-emerald-500" },
+      };
+      const ls = labelStyles[preview.label];
+
+      return (
+        <div className="slide-in bg-white border border-pine-100 rounded-2xl p-6 mt-3 shadow-panel">
+          <div className="space-y-5">
+            <div className="flex items-center gap-3">
+              <span className="text-[13px] font-medium text-pine-500 w-24">Deadline</span>
+              <select
+                value={deadline}
+                onChange={e => setDeadline(e.target.value)}
+                className="flex-1 border border-pine-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-pine-200 focus:border-pine-400 outline-none transition"
+              >
+                {Object.entries(DEADLINE_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+            <DotSelector value={importance} onChange={setImportance} label="Importance" activeColor="bg-pine-600" />
+            <DotSelector value={effort} onChange={setEffort} label="Effort" activeColor="bg-amber-500" />
+
+            {/* Live preview */}
+            <div className={`flex items-center gap-3 p-4 rounded-xl border ${ls.bg} ${ls.border}`}>
+              <span className={`text-3xl font-bold ${ls.text}`}>{preview.score.toFixed(1)}</span>
+              <div className="flex flex-col gap-0.5">
+                <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider ${ls.text}`}>
+                  <span className={`w-2 h-2 rounded-full ${ls.badge}`}></span>
+                  {preview.label} priority
+                </span>
+                <span className="text-xs text-pine-400">{preview.reasoning}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end pt-1">
+              <button onClick={onCancel} className="px-4 py-2.5 text-sm text-pine-400 hover:text-pine-600 hover:bg-pine-50 rounded-lg transition font-medium">Cancel</button>
+              <button
+                onClick={() => onSave({ deadline, importance, effort, score: preview.score, priority: preview.label, reasoning: preview.reasoning })}
+                className="px-5 py-2.5 text-sm bg-pine-600 text-white rounded-lg hover:bg-pine-700 transition font-semibold shadow-sm"
+              >
+                Save Priority
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- Task Card ---
+    function TaskCard({ task, weights, onUpdate, onDelete }) {
+      const [editing, setEditing] = useState(false);
+      const [confirmDelete, setConfirmDelete] = useState(false);
+
+      const priorityBadge = {
+        high: "bg-red-50 text-red-600 border-red-200",
+        med: "bg-amber-50 text-amber-600 border-amber-200",
+        low: "bg-emerald-50 text-emerald-600 border-emerald-200",
+      };
+
+      const priorityDot = { high: "bg-red-400", med: "bg-amber-400", low: "bg-emerald-400" };
+
+      return (
+        <div className="fade-in">
+          <div className={`flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl border border-pine-100 shadow-card hover:shadow-card-hover transition-all duration-200 group ${task.status === "completed" ? "opacity-50" : ""}`}>
+            {/* Complete button */}
+            {task.status !== "completed" && (
+              <button
+                onClick={() => onUpdate({ ...task, status: "completed" })}
+                className="w-[18px] h-[18px] rounded-md border-2 border-pine-200 hover:border-pine-500 hover:bg-pine-50 transition flex-shrink-0"
+                title="Complete"
+              />
+            )}
+            {task.status === "completed" && (
+              <span className="w-[18px] h-[18px] rounded-md bg-pine-500 flex items-center justify-center flex-shrink-0">
+                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              </span>
+            )}
+
+            {/* Priority dot */}
+            {task.priority && (
+              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${priorityDot[task.priority]}`}></span>
+            )}
+
+            {/* Title */}
+            <span className={`flex-1 text-[13px] leading-snug ${task.status === "completed" ? "line-through text-pine-300" : "text-pine-700 font-medium"}`}>
+              {task.title}
+            </span>
+
+            {/* Score + Badge */}
+            {task.score != null && (
+              <span className="text-[11px] text-pine-300 font-mono tabular-nums">{task.score.toFixed(1)}</span>
+            )}
+            {task.priority && (
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${priorityBadge[task.priority]}`}>
+                {task.priority}
+              </span>
+            )}
+
+            {/* Actions */}
+            {task.status !== "completed" && (
+              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                <button onClick={() => setEditing(!editing)} className="p-1.5 hover:bg-pine-50 rounded-lg text-pine-300 hover:text-pine-600 transition" title="Prioritize">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                </button>
+                <button onClick={() => setConfirmDelete(true)} className="p-1.5 hover:bg-red-50 rounded-lg text-pine-300 hover:text-red-500 transition" title="Delete">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
+              </div>
+            )}
+            {task.status === "completed" && (
+              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                <button onClick={() => onUpdate({ ...task, status: "unprioritized", priority: null, score: null, reasoning: null })} className="p-1.5 hover:bg-pine-50 rounded-lg text-pine-300 hover:text-pine-600 transition" title="Restore">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
+                </button>
+                <button onClick={() => setConfirmDelete(true)} className="p-1.5 hover:bg-red-50 rounded-lg text-pine-300 hover:text-red-500 transition" title="Delete">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Delete confirmation */}
+          {confirmDelete && (
+            <div className="slide-in flex items-center gap-3 mt-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm">
+              <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
+              <span className="text-red-700 font-medium flex-1">Delete this task?</span>
+              <button onClick={() => setConfirmDelete(false)} className="px-3 py-1.5 text-pine-500 hover:bg-white rounded-lg text-xs font-medium transition">Keep</button>
+              <button onClick={() => { onDelete(task.id); setConfirmDelete(false); }} className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition">Delete</button>
+            </div>
+          )}
+
+          {/* Scoring panel */}
+          {editing && (
+            <ScoringPanel
+              task={task}
+              weights={weights}
+              onCancel={() => setEditing(false)}
+              onSave={(updates) => {
+                onUpdate({ ...task, ...updates, status: "active" });
+                setEditing(false);
+              }}
+            />
+          )}
+
+          {/* Reasoning */}
+          {task.reasoning && !editing && (
+            <div className="ml-10 mt-1 text-[11px] text-pine-300 italic">{task.reasoning}</div>
+          )}
+        </div>
+      );
+    }
+
+    // --- Section ---
+    function Section({ icon, title, count, tasks, weights, onUpdate, onDelete, collapsible = false }) {
+      const [collapsed, setCollapsed] = useState(collapsible);
+      if (tasks.length === 0) return null;
+      return (
+        <div className="mb-8">
+          <button
+            onClick={() => collapsible && setCollapsed(!collapsed)}
+            className={`flex items-center gap-2.5 mb-3 ${collapsible ? "cursor-pointer hover:opacity-80" : "cursor-default"} transition`}
+          >
+            <h2 className="text-xs font-bold text-pine-500 uppercase tracking-widest">{title}</h2>
+            <span className="text-[11px] text-pine-400 bg-pine-50 border border-pine-100 px-2 py-0.5 rounded-md font-semibold">{tasks.length}</span>
+            {collapsible && (
+              <svg className={`w-3.5 h-3.5 text-pine-300 transition-transform duration-200 ${collapsed ? "" : "rotate-90"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            )}
+          </button>
+          {!collapsed && (
+            <div className="space-y-2">
+              {tasks.map(t => (
+                <TaskCard key={t.id} task={t} weights={weights} onUpdate={onUpdate} onDelete={onDelete} />
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // --- Confetti Celebration ---
+    function Confetti() {
+      const [particles, setParticles] = useState([]);
+      React.useEffect(() => {
+        const colors = ['#6aab7b','#95c9a3','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#f97316','#10b981','#357a4a'];
+        const shapes = ['circle','square','triangle'];
+        const p = [];
+        for (let i = 0; i < 80; i++) {
+          p.push({
+            id: i,
+            x: Math.random() * 100,
+            delay: Math.random() * 0.6,
+            duration: 2 + Math.random() * 2,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            size: 6 + Math.random() * 10,
+            shape: shapes[Math.floor(Math.random() * shapes.length)],
+            drift: -30 + Math.random() * 60,
+            spin: Math.random() * 720,
+          });
+        }
+        setParticles(p);
+      }, []);
+      return (
+        <div style={{position:'fixed',inset:0,pointerEvents:'none',zIndex:9999,overflow:'hidden'}}>
+          {particles.map(p => {
+            const style = {
+              position:'absolute',
+              left: `${p.x}%`,
+              top: '-5%',
+              width: p.size,
+              height: p.shape === 'triangle' ? 0 : p.size,
+              background: p.shape === 'triangle' ? 'transparent' : p.color,
+              borderLeft: p.shape === 'triangle' ? `${p.size/2}px solid transparent` : undefined,
+              borderRight: p.shape === 'triangle' ? `${p.size/2}px solid transparent` : undefined,
+              borderBottom: p.shape === 'triangle' ? `${p.size}px solid ${p.color}` : undefined,
+              borderRadius: p.shape === 'circle' ? '50%' : p.shape === 'square' ? '2px' : '0',
+              animation: `confettiFall ${p.duration}s ease-in ${p.delay}s forwards`,
+              opacity: 0,
+              transform: `translateX(0) rotate(0deg)`,
+              '--drift': `${p.drift}px`,
+              '--spin': `${p.spin}deg`,
+            };
+            return <div key={p.id} style={style} />;
+          })}
+        </div>
+      );
+    }
+
+    // --- Celebration Overlay ---
+    function CelebrationOverlay({ onDismiss }) {
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onDismiss}>
+          <Confetti />
+          <div className="absolute inset-0 bg-pine-800/30 backdrop-blur-sm" />
+          <div className="relative slide-in bg-white rounded-3xl p-10 shadow-2xl text-center max-w-sm mx-4 border border-pine-100" onClick={e => e.stopPropagation()}>
+            <div className="text-6xl mb-4">🎉</div>
+            <h2 className="text-2xl font-bold text-pine-700 mb-2">Great Job!</h2>
+            <p className="text-pine-500 text-sm leading-relaxed mb-6">You are Done for the day, take a break :)</p>
+            <button onClick={onDismiss} className="px-6 py-3 bg-pine-600 text-white rounded-xl text-sm font-semibold hover:bg-pine-700 transition shadow-sm">
+              Thanks!
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // --- Main App ---
+    function App() {
+      const [tasks, setTasks] = useState([]);
+      const [newTitle, setNewTitle] = useState("");
+      const [weights, setWeights] = useState([40, 40, 20]);
+      const [activePreset, setActivePreset] = useState("Balanced");
+      const [showWeights, setShowWeights] = useState(false);
+      const [showCelebration, setShowCelebration] = useState(false);
+      const [celebrationShown, setCelebrationShown] = useState(false);
+
+      const handleAddTask = () => {
+        const title = newTitle.trim();
+        if (!title) return;
+        setTasks(prev => [...prev, {
+          id: uuid(), title, status: "unprioritized",
+          deadline: "none", importance: 3, effort: 3,
+          priority: null, score: null, reasoning: null,
+        }]);
+        setNewTitle("");
+      };
+
+      const handleUpdate = useCallback((updated) => {
+        setTasks(prev => {
+          const next = prev.map(t => t.id === updated.id ? updated : t);
+          // Check if all tasks are now completed
+          if (next.length > 0 && next.every(t => t.status === "completed")) {
+            setTimeout(() => {
+              setShowCelebration(true);
+              setCelebrationShown(true);
+            }, 400);
+          }
+          return next;
+        });
+      }, []);
+
+      const handleDelete = useCallback((id) => {
+        setTasks(prev => prev.filter(t => t.id !== id));
+      }, []);
+
+      const handleWeightChange = (index, newVal) => {
+        newVal = Math.max(10, Math.min(80, newVal));
+        const newWeights = [...weights];
+        const oldVal = newWeights[index];
+        const diff = newVal - oldVal;
+        newWeights[index] = newVal;
+        const otherIndices = [0, 1, 2].filter(i => i !== index);
+        const otherSum = otherIndices.reduce((s, i) => s + newWeights[i], 0);
+        otherIndices.forEach(i => {
+          const proportion = otherSum > 0 ? newWeights[i] / otherSum : 0.5;
+          newWeights[i] = Math.max(10, Math.round(newWeights[i] - diff * proportion));
+        });
+        const total = newWeights.reduce((s, v) => s + v, 0);
+        if (total !== 100) {
+          newWeights[otherIndices[0]] += 100 - total;
+          newWeights[otherIndices[0]] = Math.max(10, newWeights[otherIndices[0]]);
+        }
+        setWeights(newWeights);
+        setActivePreset("");
+      };
+
+      const applyPreset = (name) => {
+        setWeights([...PRESETS[name]]);
+        setActivePreset(name);
+      };
+
+      const sections = useMemo(() => {
+        const unprioritized = tasks.filter(t => t.status === "unprioritized");
+        const active = tasks.filter(t => t.status === "active");
+        const completed = tasks.filter(t => t.status === "completed");
+        const high = active.filter(t => t.priority === "high").sort((a, b) => b.score - a.score);
+        const med = active.filter(t => t.priority === "med").sort((a, b) => b.score - a.score);
+        const low = active.filter(t => t.priority === "low").sort((a, b) => b.score - a.score);
+        return { unprioritized, high, med, low, completed };
+      }, [tasks]);
+
+      const weightLabels = ["Urgency", "Importance", "Effort"];
+      const totalTasks = tasks.length;
+      const completedCount = sections.completed.length;
+
+      return (
+        <div className="max-w-xl mx-auto px-5 py-10">
+          {showCelebration && <CelebrationOverlay onDismiss={() => setShowCelebration(false)} />}
+          {/* Header */}
+          <div className="mb-10">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-bold text-pine-700 tracking-tight">Prioritizer</h1>
+                <p className="text-xs text-pine-400 mt-0.5">Score and rank your tasks</p>
+              </div>
+              {totalTasks > 0 && (
+                <div className="text-right">
+                  <span className="text-2xl font-bold text-pine-600">{completedCount}</span>
+                  <span className="text-sm text-pine-300">/{totalTasks}</span>
+                  <p className="text-[10px] text-pine-300 uppercase tracking-wider">done</p>
+                </div>
+              )}
+            </div>
+
+            {/* Progress bar */}
+            {totalTasks > 0 && (
+              <div className="mt-4 h-1.5 bg-pine-100 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-pine-400 to-pine-500 rounded-full transition-all duration-500" style={{width: `${(completedCount / totalTasks * 100)}%`}}></div>
+              </div>
+            )}
+          </div>
+
+          {/* Task Input */}
+          <div className="flex gap-2 mb-8">
+            <input
+              type="text"
+              value={newTitle}
+              onChange={e => setNewTitle(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleAddTask()}
+              placeholder="What needs to be done?"
+              className="flex-1 bg-white border border-pine-200 rounded-xl px-4 py-3 text-sm text-pine-700 focus:ring-2 focus:ring-pine-200 focus:border-pine-400 outline-none shadow-card transition placeholder:text-pine-300"
+            />
+            <button
+              onClick={handleAddTask}
+              className="px-5 py-3 bg-pine-600 text-white rounded-xl text-sm font-semibold hover:bg-pine-700 active:scale-[0.98] transition shadow-sm"
+            >
+              Add
+            </button>
+          </div>
+
+          {/* Weight Settings — collapsible */}
+          <div className="mb-8">
+            <button
+              onClick={() => setShowWeights(!showWeights)}
+              className="flex items-center gap-2 text-xs text-pine-400 hover:text-pine-600 transition font-medium mb-3"
+            >
+              <svg className={`w-3.5 h-3.5 transition-transform duration-200 ${showWeights ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+              Priority Weights
+              <span className="text-pine-300 font-normal">({weights[0]}/{weights[1]}/{weights[2]})</span>
+            </button>
+            {showWeights && (
+              <div className="slide-in bg-white rounded-2xl border border-pine-100 p-5 shadow-card">
+                <div className="flex flex-wrap gap-1.5 mb-5">
+                  {Object.keys(PRESETS).map(name => (
+                    <button
+                      key={name}
+                      onClick={() => applyPreset(name)}
+                      className={`px-3 py-1.5 text-xs rounded-lg transition font-medium ${
+                        activePreset === name
+                          ? "bg-pine-600 text-white shadow-sm"
+                          : "bg-pine-50 text-pine-500 hover:bg-pine-100 border border-pine-100"
+                      }`}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+                <div className="space-y-4">
+                  {weights.map((w, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <span className="text-xs font-medium text-pine-500 w-20">{weightLabels[i]}</span>
+                      <input
+                        type="range" min={10} max={80} value={w}
+                        onChange={e => handleWeightChange(i, parseInt(e.target.value))}
+                        className="flex-1"
+                      />
+                      <span className="text-xs font-mono font-bold text-pine-600 w-10 text-right">{w}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Task Sections */}
+          <Section title="Unprioritized" tasks={sections.unprioritized} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} />
+          <Section title="High Priority" tasks={sections.high} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} />
+          <Section title="Medium Priority" tasks={sections.med} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} />
+          <Section title="Low Priority" tasks={sections.low} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} />
+          <Section title="Completed" tasks={sections.completed} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} collapsible />
+
+          {tasks.length === 0 && (
+            <div className="text-center py-20">
+              <div className="w-16 h-16 mx-auto mb-4 bg-pine-100 rounded-2xl flex items-center justify-center">
+                <svg className="w-7 h-7 text-pine-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+              </div>
+              <p className="text-sm font-medium text-pine-500">No tasks yet</p>
+              <p className="text-xs text-pine-300 mt-1">Add your first task above to get started</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
