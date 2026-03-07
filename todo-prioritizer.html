@@ -182,10 +182,94 @@
       );
     }
 
+    // --- Subtask List ---
+    function SubtaskList({ task, onUpdate }) {
+      const [newSub, setNewSub] = useState("");
+      const [adding, setAdding] = useState(false);
+      const subtasks = task.subtasks || [];
+      const doneCount = subtasks.filter(s => s.done).length;
+
+      const addSubtask = () => {
+        const title = newSub.trim();
+        if (!title) return;
+        onUpdate({ ...task, subtasks: [...subtasks, { id: uuid(), title, done: false }] });
+        setNewSub("");
+      };
+
+      const toggleSub = (subId) => {
+        onUpdate({ ...task, subtasks: subtasks.map(s => s.id === subId ? { ...s, done: !s.done } : s) });
+      };
+
+      const deleteSub = (subId) => {
+        onUpdate({ ...task, subtasks: subtasks.filter(s => s.id !== subId) });
+      };
+
+      return (
+        <div className="ml-10 mt-2">
+          {/* Subtask progress */}
+          {subtasks.length > 0 && (
+            <div className="flex items-center gap-2 mb-2">
+              <div className="flex-1 h-1 bg-pine-100 rounded-full overflow-hidden">
+                <div className="h-full bg-pine-400 rounded-full transition-all duration-300" style={{width: `${subtasks.length > 0 ? (doneCount / subtasks.length * 100) : 0}%`}}></div>
+              </div>
+              <span className="text-[10px] text-pine-300 font-mono">{doneCount}/{subtasks.length}</span>
+            </div>
+          )}
+
+          {/* Subtask items */}
+          {subtasks.map(sub => (
+            <div key={sub.id} className="flex items-center gap-2 py-1 group/sub">
+              <button
+                onClick={() => toggleSub(sub.id)}
+                className={`w-3.5 h-3.5 rounded flex-shrink-0 border transition ${sub.done ? "bg-pine-400 border-pine-400" : "border-pine-200 hover:border-pine-400"}`}
+              >
+                {sub.done && (
+                  <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                )}
+              </button>
+              <span className={`flex-1 text-xs ${sub.done ? "line-through text-pine-300" : "text-pine-600"}`}>{sub.title}</span>
+              <button
+                onClick={() => deleteSub(sub.id)}
+                className="opacity-0 group-hover/sub:opacity-100 p-0.5 hover:bg-red-50 rounded text-pine-200 hover:text-red-400 transition"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+          ))}
+
+          {/* Add subtask */}
+          {adding ? (
+            <div className="flex items-center gap-1.5 mt-1 slide-in">
+              <input
+                type="text"
+                value={newSub}
+                onChange={e => setNewSub(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") addSubtask(); if (e.key === "Escape") { setAdding(false); setNewSub(""); } }}
+                placeholder="Add subtask..."
+                className="flex-1 text-xs border border-pine-200 rounded-lg px-2.5 py-1.5 text-pine-700 focus:ring-1 focus:ring-pine-200 focus:border-pine-400 outline-none placeholder:text-pine-300"
+                autoFocus
+              />
+              <button onClick={addSubtask} className="px-2 py-1.5 text-[10px] font-semibold bg-pine-600 text-white rounded-lg hover:bg-pine-700 transition">Add</button>
+              <button onClick={() => { setAdding(false); setNewSub(""); }} className="px-2 py-1.5 text-[10px] text-pine-400 hover:text-pine-600 transition">Cancel</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setAdding(true)}
+              className="flex items-center gap-1 mt-1 text-[11px] text-pine-300 hover:text-pine-500 transition font-medium"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+              Add subtask
+            </button>
+          )}
+        </div>
+      );
+    }
+
     // --- Task Card ---
     function TaskCard({ task, weights, onUpdate, onDelete }) {
       const [editing, setEditing] = useState(false);
       const [confirmDelete, setConfirmDelete] = useState(false);
+      const [showSubtasks, setShowSubtasks] = useState((task.subtasks || []).length > 0);
 
       const priorityBadge = {
         high: "bg-red-50 text-red-600 border-red-200",
@@ -232,9 +316,20 @@
               </span>
             )}
 
+            {/* Subtask count indicator */}
+            {(task.subtasks || []).length > 0 && (
+              <button onClick={() => setShowSubtasks(!showSubtasks)} className="flex items-center gap-1 text-[10px] text-pine-300 hover:text-pine-500 transition" title="Toggle subtasks">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                <span className="font-mono">{task.subtasks.filter(s => s.done).length}/{task.subtasks.length}</span>
+              </button>
+            )}
+
             {/* Actions */}
             {task.status !== "completed" && (
               <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                <button onClick={() => setShowSubtasks(!showSubtasks)} className="p-1.5 hover:bg-pine-50 rounded-lg text-pine-300 hover:text-pine-600 transition" title="Subtasks">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
+                </button>
                 <button onClick={() => setEditing(!editing)} className="p-1.5 hover:bg-pine-50 rounded-lg text-pine-300 hover:text-pine-600 transition" title="Prioritize">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
                 </button>
@@ -281,6 +376,11 @@
           {/* Reasoning */}
           {task.reasoning && !editing && (
             <div className="ml-10 mt-1 text-[11px] text-pine-300 italic">{task.reasoning}</div>
+          )}
+
+          {/* Subtasks */}
+          {showSubtasks && task.status !== "completed" && (
+            <SubtaskList task={task} onUpdate={onUpdate} />
           )}
         </div>
       );
@@ -396,6 +496,7 @@
           id: uuid(), title, status: "unprioritized",
           deadline: "none", importance: 3, effort: 3,
           priority: null, score: null, reasoning: null,
+          subtasks: [],
         }]);
         setNewTitle("");
       };
