@@ -13,7 +13,7 @@
         extend: {
           fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
           colors: {
-            pine: { 50: '#f0faf0', 100: '#d4edda', 200: '#b8dfc2', 300: '#95c9a3', 400: '#6aab7b', 500: '#4a9060', 600: '#357a4a', 700: '#2d6a4f', 800: '#1b4332', 900: '#143528' }
+            brand: { 50: '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81' }
           },
           boxShadow: {
             'card': '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)',
@@ -28,25 +28,25 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
-    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #357a4a; }
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #334155; }
     .slide-in { animation: slideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
     @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     .fade-in { animation: fadeIn 0.2s ease-out; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    input[type="range"] { -webkit-appearance: none; height: 5px; border-radius: 99px; background: linear-gradient(to right, #d4edda, #b8dfc2); }
-    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #357a4a; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.15); transition: transform 0.15s; }
+    input[type="range"] { -webkit-appearance: none; height: 5px; border-radius: 99px; background: linear-gradient(to right, #e0e7ff, #c7d2fe); }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #4f46e5; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.15); transition: transform 0.15s; }
     input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
     input[type="range"]::-webkit-slider-thumb:active { transform: scale(0.95); }
     @keyframes confettiFall {
       0% { opacity: 1; transform: translateY(0) translateX(0) rotate(0deg); }
       100% { opacity: 0; transform: translateY(105vh) translateX(var(--drift, 0px)) rotate(var(--spin, 360deg)); }
     }
-    ::selection { background: #d4edda; color: #1b4332; }
-    input::placeholder { color: #95c9a3; }
-    select { color: #357a4a; }
+    ::selection { background: #e0e7ff; color: #312e81; }
+    input::placeholder { color: #94a3b8; }
+    select { color: #334155; }
   </style>
 </head>
-<body class="bg-emerald-50 min-h-screen antialiased">
+<body class="bg-slate-50 min-h-screen antialiased">
   <div id="root"></div>
   <script type="text/babel">
     const { useState, useMemo, useCallback } = React;
@@ -94,10 +94,10 @@
     }
 
     // --- Dot selector component ---
-    function DotSelector({ value, onChange, label, activeColor = "bg-pine-500" }) {
+    function DotSelector({ value, onChange, label, activeColor = "bg-brand-500" }) {
       return (
         <div className="flex items-center gap-3">
-          <span className="text-[13px] font-medium text-pine-500 w-24">{label}</span>
+          <span className="text-[13px] font-medium text-slate-600 w-24">{label}</span>
           <div className="flex gap-1.5">
             {[1, 2, 3, 4, 5].map(n => (
               <button
@@ -106,7 +106,7 @@
                 className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-semibold transition-all duration-150 ${
                   n <= value
                     ? `${activeColor} text-white shadow-sm scale-105`
-                    : "bg-pine-50 text-pine-400 hover:bg-pine-100"
+                    : "bg-brand-50 text-brand-400 hover:bg-slate-200"
                 }`}
               >
                 {n}
@@ -139,21 +139,21 @@
       const ls = labelStyles[preview.label];
 
       return (
-        <div className="slide-in bg-white border border-pine-100 rounded-2xl p-6 mt-3 shadow-panel">
+        <div className="slide-in bg-white border border-slate-200 rounded-2xl p-6 mt-3 shadow-panel">
           <div className="space-y-5">
             <div className="flex items-center gap-3">
-              <span className="text-[13px] font-medium text-pine-500 w-24">Deadline</span>
+              <span className="text-[13px] font-medium text-slate-600 w-24">Deadline</span>
               <select
                 value={deadline}
                 onChange={e => setDeadline(e.target.value)}
-                className="flex-1 border border-pine-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-pine-200 focus:border-pine-400 outline-none transition"
+                className="flex-1 border border-slate-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-slate-300 focus:border-brand-400 outline-none transition"
               >
                 {Object.entries(DEADLINE_LABELS).map(([k, v]) => (
                   <option key={k} value={k}>{v}</option>
                 ))}
               </select>
             </div>
-            <DotSelector value={importance} onChange={setImportance} label="Importance" activeColor="bg-pine-600" />
+            <DotSelector value={importance} onChange={setImportance} label="Importance" activeColor="bg-brand-600" />
             <DotSelector value={effort} onChange={setEffort} label="Effort" activeColor="bg-amber-500" />
 
             {/* Live preview */}
@@ -164,15 +164,15 @@
                   <span className={`w-2 h-2 rounded-full ${ls.badge}`}></span>
                   {preview.label} priority
                 </span>
-                <span className="text-xs text-pine-400">{preview.reasoning}</span>
+                <span className="text-xs text-slate-400">{preview.reasoning}</span>
               </div>
             </div>
 
             <div className="flex gap-2 justify-end pt-1">
-              <button onClick={onCancel} className="px-4 py-2.5 text-sm text-pine-400 hover:text-pine-600 hover:bg-pine-50 rounded-lg transition font-medium">Cancel</button>
+              <button onClick={onCancel} className="px-4 py-2.5 text-sm text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition font-medium">Cancel</button>
               <button
                 onClick={() => onSave({ deadline, importance, effort, score: preview.score, priority: preview.label, reasoning: preview.reasoning })}
-                className="px-5 py-2.5 text-sm bg-pine-600 text-white rounded-lg hover:bg-pine-700 transition font-semibold shadow-sm"
+                className="px-5 py-2.5 text-sm bg-brand-600 text-white rounded-lg hover:bg-slate-800 transition font-semibold shadow-sm"
               >
                 Save Priority
               </button>
@@ -209,10 +209,10 @@
           {/* Subtask progress */}
           {subtasks.length > 0 && (
             <div className="flex items-center gap-2 mb-2">
-              <div className="flex-1 h-1 bg-pine-100 rounded-full overflow-hidden">
-                <div className="h-full bg-pine-400 rounded-full transition-all duration-300" style={{width: `${subtasks.length > 0 ? (doneCount / subtasks.length * 100) : 0}%`}}></div>
+              <div className="flex-1 h-1 bg-slate-200 rounded-full overflow-hidden">
+                <div className="h-full bg-brand-400 rounded-full transition-all duration-300" style={{width: `${subtasks.length > 0 ? (doneCount / subtasks.length * 100) : 0}%`}}></div>
               </div>
-              <span className="text-[10px] text-pine-300 font-mono">{doneCount}/{subtasks.length}</span>
+              <span className="text-[10px] text-slate-400 font-mono">{doneCount}/{subtasks.length}</span>
             </div>
           )}
 
@@ -221,16 +221,16 @@
             <div key={sub.id} className="flex items-center gap-2 py-1 group/sub">
               <button
                 onClick={() => toggleSub(sub.id)}
-                className={`w-3.5 h-3.5 rounded flex-shrink-0 border transition ${sub.done ? "bg-pine-400 border-pine-400" : "border-pine-200 hover:border-pine-400"}`}
+                className={`w-3.5 h-3.5 rounded flex-shrink-0 border transition ${sub.done ? "bg-brand-400 border-brand-400" : "border-slate-300 hover:border-brand-400"}`}
               >
                 {sub.done && (
                   <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                 )}
               </button>
-              <span className={`flex-1 text-xs ${sub.done ? "line-through text-pine-300" : "text-pine-600"}`}>{sub.title}</span>
+              <span className={`flex-1 text-xs ${sub.done ? "line-through text-slate-400" : "text-slate-700"}`}>{sub.title}</span>
               <button
                 onClick={() => deleteSub(sub.id)}
-                className="opacity-0 group-hover/sub:opacity-100 p-0.5 hover:bg-red-50 rounded text-pine-200 hover:text-red-400 transition"
+                className="opacity-0 group-hover/sub:opacity-100 p-0.5 hover:bg-red-50 rounded text-slate-300 hover:text-red-400 transition"
               >
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
@@ -246,16 +246,16 @@
                 onChange={e => setNewSub(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter") addSubtask(); if (e.key === "Escape") { setAdding(false); setNewSub(""); } }}
                 placeholder="Add subtask..."
-                className="flex-1 text-xs border border-pine-200 rounded-lg px-2.5 py-1.5 text-pine-700 focus:ring-1 focus:ring-pine-200 focus:border-pine-400 outline-none placeholder:text-pine-300"
+                className="flex-1 text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-800 focus:ring-1 focus:ring-slate-300 focus:border-brand-400 outline-none placeholder:text-slate-400"
                 autoFocus
               />
-              <button onClick={addSubtask} className="px-2 py-1.5 text-[10px] font-semibold bg-pine-600 text-white rounded-lg hover:bg-pine-700 transition">Add</button>
-              <button onClick={() => { setAdding(false); setNewSub(""); }} className="px-2 py-1.5 text-[10px] text-pine-400 hover:text-pine-600 transition">Cancel</button>
+              <button onClick={addSubtask} className="px-2 py-1.5 text-[10px] font-semibold bg-brand-600 text-white rounded-lg hover:bg-slate-800 transition">Add</button>
+              <button onClick={() => { setAdding(false); setNewSub(""); }} className="px-2 py-1.5 text-[10px] text-slate-400 hover:text-slate-600 transition">Cancel</button>
             </div>
           ) : (
             <button
               onClick={() => setAdding(true)}
-              className="flex items-center gap-1 mt-1 text-[11px] text-pine-300 hover:text-pine-500 transition font-medium"
+              className="flex items-center gap-1 mt-1 text-[11px] text-slate-400 hover:text-brand-500 transition font-medium"
             >
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
               Add subtask
@@ -281,17 +281,17 @@
 
       return (
         <div className="fade-in">
-          <div className={`flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl border border-pine-100 shadow-card hover:shadow-card-hover transition-all duration-200 group ${task.status === "completed" ? "opacity-50" : ""}`}>
+          <div className={`flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl border border-slate-200 shadow-card hover:shadow-card-hover transition-all duration-200 group ${task.status === "completed" ? "opacity-50" : ""}`}>
             {/* Complete button */}
             {task.status !== "completed" && (
               <button
                 onClick={() => onUpdate({ ...task, status: "completed" })}
-                className="w-[18px] h-[18px] rounded-md border-2 border-pine-200 hover:border-pine-500 hover:bg-pine-50 transition flex-shrink-0"
+                className="w-[18px] h-[18px] rounded-md border-2 border-slate-300 hover:border-brand-500 hover:bg-brand-50 transition flex-shrink-0"
                 title="Complete"
               />
             )}
             {task.status === "completed" && (
-              <span className="w-[18px] h-[18px] rounded-md bg-pine-500 flex items-center justify-center flex-shrink-0">
+              <span className="w-[18px] h-[18px] rounded-md bg-brand-500 flex items-center justify-center flex-shrink-0">
                 <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
               </span>
             )}
@@ -302,13 +302,13 @@
             )}
 
             {/* Title */}
-            <span className={`flex-1 text-[13px] leading-snug ${task.status === "completed" ? "line-through text-pine-300" : "text-pine-700 font-medium"}`}>
+            <span className={`flex-1 text-[13px] leading-snug ${task.status === "completed" ? "line-through text-slate-400" : "text-slate-700 font-medium"}`}>
               {task.title}
             </span>
 
             {/* Score + Badge */}
             {task.score != null && (
-              <span className="text-[11px] text-pine-300 font-mono tabular-nums">{task.score.toFixed(1)}</span>
+              <span className="text-[11px] text-slate-400 font-mono tabular-nums">{task.score.toFixed(1)}</span>
             )}
             {task.priority && (
               <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border ${priorityBadge[task.priority]}`}>
@@ -318,7 +318,7 @@
 
             {/* Subtask count indicator */}
             {(task.subtasks || []).length > 0 && (
-              <button onClick={() => setShowSubtasks(!showSubtasks)} className="flex items-center gap-1 text-[10px] text-pine-300 hover:text-pine-500 transition" title="Toggle subtasks">
+              <button onClick={() => setShowSubtasks(!showSubtasks)} className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-brand-500 transition" title="Toggle subtasks">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
                 <span className="font-mono">{task.subtasks.filter(s => s.done).length}/{task.subtasks.length}</span>
               </button>
@@ -327,23 +327,23 @@
             {/* Actions */}
             {task.status !== "completed" && (
               <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                <button onClick={() => setShowSubtasks(!showSubtasks)} className="p-1.5 hover:bg-pine-50 rounded-lg text-pine-300 hover:text-pine-600 transition" title="Subtasks">
+                <button onClick={() => setShowSubtasks(!showSubtasks)} className="p-1.5 hover:bg-brand-50 rounded-lg text-slate-400 hover:text-brand-600 transition" title="Subtasks">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
                 </button>
-                <button onClick={() => setEditing(!editing)} className="p-1.5 hover:bg-pine-50 rounded-lg text-pine-300 hover:text-pine-600 transition" title="Prioritize">
+                <button onClick={() => setEditing(!editing)} className="p-1.5 hover:bg-brand-50 rounded-lg text-slate-400 hover:text-brand-600 transition" title="Prioritize">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
                 </button>
-                <button onClick={() => setConfirmDelete(true)} className="p-1.5 hover:bg-red-50 rounded-lg text-pine-300 hover:text-red-500 transition" title="Delete">
+                <button onClick={() => setConfirmDelete(true)} className="p-1.5 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-500 transition" title="Delete">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </button>
               </div>
             )}
             {task.status === "completed" && (
               <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                <button onClick={() => onUpdate({ ...task, status: "unprioritized", priority: null, score: null, reasoning: null })} className="p-1.5 hover:bg-pine-50 rounded-lg text-pine-300 hover:text-pine-600 transition" title="Restore">
+                <button onClick={() => onUpdate({ ...task, status: "unprioritized", priority: null, score: null, reasoning: null })} className="p-1.5 hover:bg-brand-50 rounded-lg text-slate-400 hover:text-brand-600 transition" title="Restore">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
                 </button>
-                <button onClick={() => setConfirmDelete(true)} className="p-1.5 hover:bg-red-50 rounded-lg text-pine-300 hover:text-red-500 transition" title="Delete">
+                <button onClick={() => setConfirmDelete(true)} className="p-1.5 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-500 transition" title="Delete">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </button>
               </div>
@@ -355,7 +355,7 @@
             <div className="slide-in flex items-center gap-3 mt-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm">
               <svg className="w-4 h-4 text-red-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
               <span className="text-red-700 font-medium flex-1">Delete this task?</span>
-              <button onClick={() => setConfirmDelete(false)} className="px-3 py-1.5 text-pine-500 hover:bg-white rounded-lg text-xs font-medium transition">Keep</button>
+              <button onClick={() => setConfirmDelete(false)} className="px-3 py-1.5 text-slate-500 hover:bg-white rounded-lg text-xs font-medium transition">Keep</button>
               <button onClick={() => { onDelete(task.id); setConfirmDelete(false); }} className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-semibold hover:bg-red-700 transition">Delete</button>
             </div>
           )}
@@ -375,7 +375,7 @@
 
           {/* Reasoning */}
           {task.reasoning && !editing && (
-            <div className="ml-10 mt-1 text-[11px] text-pine-300 italic">{task.reasoning}</div>
+            <div className="ml-10 mt-1 text-[11px] text-slate-400 italic">{task.reasoning}</div>
           )}
 
           {/* Subtasks */}
@@ -396,10 +396,10 @@
             onClick={() => collapsible && setCollapsed(!collapsed)}
             className={`flex items-center gap-2.5 mb-3 ${collapsible ? "cursor-pointer hover:opacity-80" : "cursor-default"} transition`}
           >
-            <h2 className="text-xs font-bold text-pine-500 uppercase tracking-widest">{title}</h2>
-            <span className="text-[11px] text-pine-400 bg-pine-50 border border-pine-100 px-2 py-0.5 rounded-md font-semibold">{tasks.length}</span>
+            <h2 className="text-xs font-bold text-slate-600 uppercase tracking-widest">{title}</h2>
+            <span className="text-[11px] text-brand-500 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-md font-semibold">{tasks.length}</span>
             {collapsible && (
-              <svg className={`w-3.5 h-3.5 text-pine-300 transition-transform duration-200 ${collapsed ? "" : "rotate-90"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+              <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${collapsed ? "" : "rotate-90"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
             )}
           </button>
           {!collapsed && (
@@ -417,7 +417,7 @@
     function Confetti() {
       const [particles, setParticles] = useState([]);
       React.useEffect(() => {
-        const colors = ['#6aab7b','#95c9a3','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#f97316','#10b981','#357a4a'];
+        const colors = ['#818cf8','#a5b4fc','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#f97316','#6366f1','#4f46e5'];
         const shapes = ['circle','square','triangle'];
         const p = [];
         for (let i = 0; i < 80; i++) {
@@ -466,12 +466,12 @@
       return (
         <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onDismiss}>
           <Confetti />
-          <div className="absolute inset-0 bg-pine-800/30 backdrop-blur-sm" />
-          <div className="relative slide-in bg-white rounded-3xl p-10 shadow-2xl text-center max-w-sm mx-4 border border-pine-100" onClick={e => e.stopPropagation()}>
+          <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm" />
+          <div className="relative slide-in bg-white rounded-3xl p-10 shadow-2xl text-center max-w-sm mx-4 border border-slate-200" onClick={e => e.stopPropagation()}>
             <div className="text-6xl mb-4">🎉</div>
-            <h2 className="text-2xl font-bold text-pine-700 mb-2">Great Job!</h2>
-            <p className="text-pine-500 text-sm leading-relaxed mb-6">You are Done for the day, take a break :)</p>
-            <button onClick={onDismiss} className="px-6 py-3 bg-pine-600 text-white rounded-xl text-sm font-semibold hover:bg-pine-700 transition shadow-sm">
+            <h2 className="text-2xl font-bold text-slate-700 mb-2">Great Job!</h2>
+            <p className="text-slate-500 text-sm leading-relaxed mb-6">You are Done for the day, take a break :)</p>
+            <button onClick={onDismiss} className="px-6 py-3 bg-brand-600 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 transition shadow-sm">
               Thanks!
             </button>
           </div>
@@ -566,22 +566,22 @@
           <div className="mb-10">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-xl font-bold text-pine-700 tracking-tight">Prioritizer</h1>
-                <p className="text-xs text-pine-400 mt-0.5">Score and rank your tasks</p>
+                <h1 className="text-xl font-bold text-slate-800 bg-gradient-to-r from-brand-600 to-brand-500 bg-clip-text text-transparent tracking-tight">Prioritizer</h1>
+                <p className="text-xs text-slate-400 mt-0.5">Score and rank your tasks</p>
               </div>
               {totalTasks > 0 && (
                 <div className="text-right">
-                  <span className="text-2xl font-bold text-pine-600">{completedCount}</span>
-                  <span className="text-sm text-pine-300">/{totalTasks}</span>
-                  <p className="text-[10px] text-pine-300 uppercase tracking-wider">done</p>
+                  <span className="text-2xl font-bold text-brand-600">{completedCount}</span>
+                  <span className="text-sm text-slate-400">/{totalTasks}</span>
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wider">done</p>
                 </div>
               )}
             </div>
 
             {/* Progress bar */}
             {totalTasks > 0 && (
-              <div className="mt-4 h-1.5 bg-pine-100 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-pine-400 to-pine-500 rounded-full transition-all duration-500" style={{width: `${(completedCount / totalTasks * 100)}%`}}></div>
+              <div className="mt-4 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-brand-400 to-brand-600 rounded-full transition-all duration-500" style={{width: `${(completedCount / totalTasks * 100)}%`}}></div>
               </div>
             )}
           </div>
@@ -594,11 +594,11 @@
               onChange={e => setNewTitle(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleAddTask()}
               placeholder="What needs to be done?"
-              className="flex-1 bg-white border border-pine-200 rounded-xl px-4 py-3 text-sm text-pine-700 focus:ring-2 focus:ring-pine-200 focus:border-pine-400 outline-none shadow-card transition placeholder:text-pine-300"
+              className="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-slate-800 focus:ring-2 focus:ring-slate-300 focus:border-brand-400 outline-none shadow-card transition placeholder:text-slate-400"
             />
             <button
               onClick={handleAddTask}
-              className="px-5 py-3 bg-pine-600 text-white rounded-xl text-sm font-semibold hover:bg-pine-700 active:scale-[0.98] transition shadow-sm"
+              className="px-5 py-3 bg-brand-600 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 active:scale-[0.98] transition shadow-sm"
             >
               Add
             </button>
@@ -608,14 +608,14 @@
           <div className="mb-8">
             <button
               onClick={() => setShowWeights(!showWeights)}
-              className="flex items-center gap-2 text-xs text-pine-400 hover:text-pine-600 transition font-medium mb-3"
+              className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-600 transition font-medium mb-3"
             >
               <svg className={`w-3.5 h-3.5 transition-transform duration-200 ${showWeights ? "rotate-90" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
               Priority Weights
-              <span className="text-pine-300 font-normal">({weights[0]}/{weights[1]}/{weights[2]})</span>
+              <span className="text-slate-400 font-normal">({weights[0]}/{weights[1]}/{weights[2]})</span>
             </button>
             {showWeights && (
-              <div className="slide-in bg-white rounded-2xl border border-pine-100 p-5 shadow-card">
+              <div className="slide-in bg-white rounded-2xl border border-slate-200 p-5 shadow-card">
                 <div className="flex flex-wrap gap-1.5 mb-5">
                   {Object.keys(PRESETS).map(name => (
                     <button
@@ -623,8 +623,8 @@
                       onClick={() => applyPreset(name)}
                       className={`px-3 py-1.5 text-xs rounded-lg transition font-medium ${
                         activePreset === name
-                          ? "bg-pine-600 text-white shadow-sm"
-                          : "bg-pine-50 text-pine-500 hover:bg-pine-100 border border-pine-100"
+                          ? "bg-brand-600 text-white shadow-sm"
+                          : "bg-brand-50 text-brand-500 hover:bg-slate-200 border border-slate-200"
                       }`}
                     >
                       {name}
@@ -634,13 +634,13 @@
                 <div className="space-y-4">
                   {weights.map((w, i) => (
                     <div key={i} className="flex items-center gap-3">
-                      <span className="text-xs font-medium text-pine-500 w-20">{weightLabels[i]}</span>
+                      <span className="text-xs font-medium text-slate-600 w-20">{weightLabels[i]}</span>
                       <input
                         type="range" min={10} max={80} value={w}
                         onChange={e => handleWeightChange(i, parseInt(e.target.value))}
                         className="flex-1"
                       />
-                      <span className="text-xs font-mono font-bold text-pine-600 w-10 text-right">{w}%</span>
+                      <span className="text-xs font-mono font-bold text-brand-600 w-10 text-right">{w}%</span>
                     </div>
                   ))}
                 </div>
@@ -657,11 +657,11 @@
 
           {tasks.length === 0 && (
             <div className="text-center py-20">
-              <div className="w-16 h-16 mx-auto mb-4 bg-pine-100 rounded-2xl flex items-center justify-center">
-                <svg className="w-7 h-7 text-pine-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+              <div className="w-16 h-16 mx-auto mb-4 bg-slate-200 rounded-2xl flex items-center justify-center">
+                <svg className="w-7 h-7 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
               </div>
-              <p className="text-sm font-medium text-pine-500">No tasks yet</p>
-              <p className="text-xs text-pine-300 mt-1">Add your first task above to get started</p>
+              <p className="text-sm font-medium text-slate-500">No tasks yet</p>
+              <p className="text-xs text-slate-400 mt-1">Add your first task above to get started</p>
             </div>
           )}
         </div>
