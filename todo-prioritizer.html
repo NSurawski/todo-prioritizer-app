@@ -44,19 +44,47 @@
     ::selection { background: #e0e7ff; color: #312e81; }
     input::placeholder { color: #94a3b8; }
     select { color: #334155; }
+    .drag-over { border-top: 2px solid #818cf8; margin-top: -2px; }
+    .dragging { opacity: 0.4; }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen antialiased">
   <div id="root"></div>
   <script type="text/babel">
-    const { useState, useMemo, useCallback } = React;
+    const { useState, useEffect, useMemo, useCallback, useRef } = React;
+
+    const STORAGE_KEYS = { tasks: "todo-prioritizer-tasks", weights: "todo-prioritizer-weights", preset: "todo-prioritizer-preset" };
+    function loadJSON(key, fallback) {
+      try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+    }
 
     function uuid() {
       return crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36);
     }
 
-    const URGENCY_MAP = { today: 5, "3days": 4, thisweek: 3, thismonth: 2, none: 1 };
-    const DEADLINE_LABELS = { today: "Today", "3days": "Within 3 days", thisweek: "This week", thismonth: "This month", none: "No deadline" };
+    function getUrgencyFromDate(dueDate) {
+      if (!dueDate) return 1;
+      const today = new Date(); today.setHours(0,0,0,0);
+      const due = new Date(dueDate + "T00:00:00");
+      const days = Math.floor((due - today) / 86400000);
+      if (days <= 0) return 5;
+      if (days <= 3) return 4;
+      if (days <= 7) return 3;
+      if (days <= 30) return 2;
+      return 1;
+    }
+
+    function getDueDateLabel(dueDate) {
+      if (!dueDate) return null;
+      const today = new Date(); today.setHours(0,0,0,0);
+      const due = new Date(dueDate + "T00:00:00");
+      const days = Math.floor((due - today) / 86400000);
+      if (days < 0) return { text: `${-days}d overdue`, color: "text-red-500 font-semibold" };
+      if (days === 0) return { text: "Due today", color: "text-amber-500 font-semibold" };
+      if (days === 1) return { text: "Due tomorrow", color: "text-amber-500" };
+      if (days <= 7) return { text: `Due in ${days}d`, color: "text-slate-500" };
+      return { text: due.toLocaleDateString("en-US", { month: "short", day: "numeric" }), color: "text-slate-400" };
+    }
     const PRESETS = {
       Balanced: [40, 40, 20],
       "Deadline-driven": [60, 30, 10],
@@ -66,7 +94,7 @@
 
     function calcScore(task, weights) {
       const [w1, w2, w3] = weights.map(w => w / 100);
-      const urgency = URGENCY_MAP[task.deadline] || 1;
+      const urgency = getUrgencyFromDate(task.dueDate);
       return urgency * w1 + task.importance * w2 + (6 - task.effort) * w3;
     }
 
@@ -78,7 +106,7 @@
 
     function generateReasoning(task, weights) {
       const [w1, w2, w3] = weights.map(w => w / 100);
-      const uScore = URGENCY_MAP[task.deadline] * w1;
+      const uScore = getUrgencyFromDate(task.dueDate) * w1;
       const iScore = task.importance * w2;
       const eScore = (6 - task.effort) * w3;
       const scores = [
@@ -119,17 +147,17 @@
 
     // --- Scoring Panel ---
     function ScoringPanel({ task, weights, onSave, onCancel }) {
-      const [deadline, setDeadline] = useState(task.deadline || "none");
+      const [dueDate, setDueDate] = useState(task.dueDate || "");
       const [importance, setImportance] = useState(task.importance || 3);
       const [effort, setEffort] = useState(task.effort || 3);
 
       const preview = useMemo(() => {
-        const t = { deadline, importance, effort };
+        const t = { dueDate, importance, effort };
         const score = calcScore(t, weights);
         const label = scoreToLabel(score);
         const reasoning = generateReasoning(t, weights);
         return { score, label, reasoning };
-      }, [deadline, importance, effort, weights]);
+      }, [dueDate, importance, effort, weights]);
 
       const labelStyles = {
         high: { bg: "bg-red-50", border: "border-red-200", text: "text-red-600", badge: "bg-red-500" },
@@ -142,16 +170,18 @@
         <div className="slide-in bg-white border border-slate-200 rounded-2xl p-6 mt-3 shadow-panel">
           <div className="space-y-5">
             <div className="flex items-center gap-3">
-              <span className="text-[13px] font-medium text-slate-600 w-24">Deadline</span>
-              <select
-                value={deadline}
-                onChange={e => setDeadline(e.target.value)}
-                className="flex-1 border border-slate-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-slate-300 focus:border-brand-400 outline-none transition"
-              >
-                {Object.entries(DEADLINE_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>{v}</option>
-                ))}
-              </select>
+              <span className="text-[13px] font-medium text-slate-600 w-24">Due date</span>
+              <div className="flex-1 flex items-center gap-2">
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={e => setDueDate(e.target.value)}
+                  className="flex-1 border border-slate-300 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-slate-300 focus:border-brand-400 outline-none transition"
+                />
+                {dueDate && (
+                  <button onClick={() => setDueDate("")} className="text-xs text-slate-400 hover:text-slate-600 transition px-2">Clear</button>
+                )}
+              </div>
             </div>
             <DotSelector value={importance} onChange={setImportance} label="Importance" activeColor="bg-brand-600" />
             <DotSelector value={effort} onChange={setEffort} label="Effort" activeColor="bg-amber-500" />
@@ -171,7 +201,7 @@
             <div className="flex gap-2 justify-end pt-1">
               <button onClick={onCancel} className="px-4 py-2.5 text-sm text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition font-medium">Cancel</button>
               <button
-                onClick={() => onSave({ deadline, importance, effort, score: preview.score, priority: preview.label, reasoning: preview.reasoning })}
+                onClick={() => onSave({ dueDate, importance, effort, score: preview.score, priority: preview.label, reasoning: preview.reasoning })}
                 className="px-5 py-2.5 text-sm bg-brand-600 text-white rounded-lg hover:bg-slate-800 transition font-semibold shadow-sm"
               >
                 Save Priority
@@ -266,7 +296,7 @@
     }
 
     // --- Task Card ---
-    function TaskCard({ task, weights, onUpdate, onDelete }) {
+    function TaskCard({ task, weights, onUpdate, onDelete, isDragOver, onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd }) {
       const [editing, setEditing] = useState(false);
       const [confirmDelete, setConfirmDelete] = useState(false);
       const [showSubtasks, setShowSubtasks] = useState((task.subtasks || []).length > 0);
@@ -280,8 +310,12 @@
       const priorityDot = { high: "bg-red-400", med: "bg-amber-400", low: "bg-emerald-400" };
 
       return (
-        <div className="fade-in">
+        <div className={`fade-in ${isDragOver ? "drag-over" : ""}`} draggable onDragStart={onDragStart} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop} onDragEnd={onDragEnd}>
           <div className={`flex items-center gap-3 px-4 py-3.5 bg-white rounded-xl border border-slate-200 shadow-card hover:shadow-card-hover transition-all duration-200 group ${task.status === "completed" ? "opacity-50" : ""}`}>
+            {/* Drag handle */}
+            <span className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" title="Drag to reorder">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+            </span>
             {/* Complete button */}
             {task.status !== "completed" && (
               <button
@@ -305,6 +339,11 @@
             <span className={`flex-1 text-[13px] leading-snug ${task.status === "completed" ? "line-through text-slate-400" : "text-slate-700 font-medium"}`}>
               {task.title}
             </span>
+
+            {/* Due date */}
+            {task.dueDate && getDueDateLabel(task.dueDate) && (
+              <span className={`text-[11px] ${getDueDateLabel(task.dueDate).color}`}>{getDueDateLabel(task.dueDate).text}</span>
+            )}
 
             {/* Score + Badge */}
             {task.score != null && (
@@ -387,8 +426,9 @@
     }
 
     // --- Section ---
-    function Section({ icon, title, count, tasks, weights, onUpdate, onDelete, collapsible = false }) {
+    function Section({ icon, title, count, tasks, weights, onUpdate, onDelete, dragRef, onReorder, collapsible = false }) {
       const [collapsed, setCollapsed] = useState(collapsible);
+      const [dragOverId, setDragOverId] = useState(null);
       if (tasks.length === 0) return null;
       return (
         <div className="mb-8">
@@ -405,7 +445,15 @@
           {!collapsed && (
             <div className="space-y-2">
               {tasks.map(t => (
-                <TaskCard key={t.id} task={t} weights={weights} onUpdate={onUpdate} onDelete={onDelete} />
+                <TaskCard
+                  key={t.id} task={t} weights={weights} onUpdate={onUpdate} onDelete={onDelete}
+                  isDragOver={dragOverId === t.id}
+                  onDragStart={() => { dragRef.current = t.id; }}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverId(t.id); }}
+                  onDragLeave={() => setDragOverId(null)}
+                  onDrop={() => { setDragOverId(null); if (dragRef.current) onReorder(dragRef.current, t.id); dragRef.current = null; }}
+                  onDragEnd={() => { setDragOverId(null); dragRef.current = null; }}
+                />
               ))}
             </div>
           )}
@@ -481,20 +529,25 @@
 
     // --- Main App ---
     function App() {
-      const [tasks, setTasks] = useState([]);
+      const [tasks, setTasks] = useState(() => loadJSON(STORAGE_KEYS.tasks, []));
       const [newTitle, setNewTitle] = useState("");
-      const [weights, setWeights] = useState([40, 40, 20]);
-      const [activePreset, setActivePreset] = useState("Balanced");
+      const [weights, setWeights] = useState(() => loadJSON(STORAGE_KEYS.weights, [40, 40, 20]));
+      const [activePreset, setActivePreset] = useState(() => loadJSON(STORAGE_KEYS.preset, "Balanced"));
       const [showWeights, setShowWeights] = useState(false);
       const [showCelebration, setShowCelebration] = useState(false);
       const [celebrationShown, setCelebrationShown] = useState(false);
+
+      // Persist to localStorage
+      useEffect(() => { localStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(tasks)); }, [tasks]);
+      useEffect(() => { localStorage.setItem(STORAGE_KEYS.weights, JSON.stringify(weights)); }, [weights]);
+      useEffect(() => { localStorage.setItem(STORAGE_KEYS.preset, JSON.stringify(activePreset)); }, [activePreset]);
 
       const handleAddTask = () => {
         const title = newTitle.trim();
         if (!title) return;
         setTasks(prev => [...prev, {
           id: uuid(), title, status: "unprioritized",
-          deadline: "none", importance: 3, effort: 3,
+          dueDate: "", importance: 3, effort: 3,
           priority: null, score: null, reasoning: null,
           subtasks: [],
         }]);
@@ -517,6 +570,20 @@
 
       const handleDelete = useCallback((id) => {
         setTasks(prev => prev.filter(t => t.id !== id));
+      }, []);
+
+      const dragRef = useRef(null);
+      const handleReorder = useCallback((dragId, dropId) => {
+        if (dragId === dropId) return;
+        setTasks(prev => {
+          const arr = [...prev];
+          const fromIdx = arr.findIndex(t => t.id === dragId);
+          const toIdx = arr.findIndex(t => t.id === dropId);
+          if (fromIdx === -1 || toIdx === -1) return prev;
+          const [moved] = arr.splice(fromIdx, 1);
+          arr.splice(toIdx, 0, moved);
+          return arr;
+        });
       }, []);
 
       const handleWeightChange = (index, newVal) => {
@@ -549,9 +616,9 @@
         const unprioritized = tasks.filter(t => t.status === "unprioritized");
         const active = tasks.filter(t => t.status === "active");
         const completed = tasks.filter(t => t.status === "completed");
-        const high = active.filter(t => t.priority === "high").sort((a, b) => b.score - a.score);
-        const med = active.filter(t => t.priority === "med").sort((a, b) => b.score - a.score);
-        const low = active.filter(t => t.priority === "low").sort((a, b) => b.score - a.score);
+        const high = active.filter(t => t.priority === "high");
+        const med = active.filter(t => t.priority === "med");
+        const low = active.filter(t => t.priority === "low");
         return { unprioritized, high, med, low, completed };
       }, [tasks]);
 
@@ -649,11 +716,11 @@
           </div>
 
           {/* Task Sections */}
-          <Section title="Unprioritized" tasks={sections.unprioritized} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} />
-          <Section title="High Priority" tasks={sections.high} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} />
-          <Section title="Medium Priority" tasks={sections.med} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} />
-          <Section title="Low Priority" tasks={sections.low} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} />
-          <Section title="Completed" tasks={sections.completed} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} collapsible />
+          <Section title="Unprioritized" tasks={sections.unprioritized} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} dragRef={dragRef} onReorder={handleReorder} />
+          <Section title="High Priority" tasks={sections.high} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} dragRef={dragRef} onReorder={handleReorder} />
+          <Section title="Medium Priority" tasks={sections.med} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} dragRef={dragRef} onReorder={handleReorder} />
+          <Section title="Low Priority" tasks={sections.low} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} dragRef={dragRef} onReorder={handleReorder} />
+          <Section title="Completed" tasks={sections.completed} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} dragRef={dragRef} onReorder={handleReorder} collapsible />
 
           {tasks.length === 0 && (
             <div className="text-center py-20">
