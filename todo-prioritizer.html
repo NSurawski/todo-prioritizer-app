@@ -46,6 +46,37 @@
     select { color: #334155; }
     .drag-over { border-top: 2px solid #818cf8; margin-top: -2px; }
     .dragging { opacity: 0.4; }
+
+    /* Dark mode overrides */
+    body.dark-mode { background-color: #0f172a; color: #cbd5e1; }
+    body.dark-mode .bg-slate-50 { background-color: #0f172a !important; }
+    body.dark-mode .bg-white { background-color: #1e293b !important; }
+    body.dark-mode .bg-slate-200 { background-color: #334155 !important; }
+    body.dark-mode .border-slate-200 { border-color: #334155 !important; }
+    body.dark-mode .border-slate-300 { border-color: #475569 !important; }
+    body.dark-mode .border-slate-100 { border-color: #334155 !important; }
+    body.dark-mode .text-slate-800 { color: #e2e8f0 !important; }
+    body.dark-mode .text-slate-700 { color: #cbd5e1 !important; }
+    body.dark-mode .text-slate-600 { color: #94a3b8 !important; }
+    body.dark-mode .text-slate-500 { color: #94a3b8 !important; }
+    body.dark-mode .text-slate-400 { color: #64748b !important; }
+    body.dark-mode .shadow-card { box-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2) !important; }
+    body.dark-mode .shadow-card-hover { box-shadow: 0 4px 12px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2) !important; }
+    body.dark-mode .shadow-panel { box-shadow: 0 8px 30px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.2) !important; }
+    body.dark-mode input[type="text"], body.dark-mode input[type="date"] { background-color: #0f172a !important; color: #e2e8f0 !important; border-color: #475569 !important; }
+    body.dark-mode input[type="text"]::placeholder { color: #475569 !important; }
+    body.dark-mode input[type="range"] { background: linear-gradient(to right, #334155, #475569) !important; }
+    body.dark-mode .bg-brand-50 { background-color: #1e1b4b !important; }
+    body.dark-mode .hover\:bg-slate-200:hover { background-color: #334155 !important; }
+    body.dark-mode .hover\:bg-slate-100:hover { background-color: #1e293b !important; }
+    body.dark-mode .hover\:bg-brand-50:hover { background-color: #1e1b4b !important; }
+    body.dark-mode .bg-red-50 { background-color: rgba(239,68,68,0.1) !important; }
+    body.dark-mode .bg-amber-50 { background-color: rgba(245,158,11,0.1) !important; }
+    body.dark-mode .bg-emerald-50 { background-color: rgba(16,185,129,0.1) !important; }
+    body.dark-mode .hover\:bg-red-50:hover { background-color: rgba(239,68,68,0.15) !important; }
+    body.dark-mode .hover\:bg-white:hover { background-color: #334155 !important; }
+    body.dark-mode .bg-slate-900\/30 { background-color: rgba(0,0,0,0.5) !important; }
+    body.dark-mode ::selection { background: #312e81; color: #e0e7ff; }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen antialiased">
@@ -53,7 +84,7 @@
   <script type="text/babel">
     const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
-    const STORAGE_KEYS = { tasks: "todo-prioritizer-tasks", weights: "todo-prioritizer-weights", preset: "todo-prioritizer-preset" };
+    const STORAGE_KEYS = { tasks: "todo-prioritizer-tasks", weights: "todo-prioritizer-weights", preset: "todo-prioritizer-preset", darkMode: "todo-prioritizer-dark-mode" };
     function loadJSON(key, fallback) {
       try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
     }
@@ -536,6 +567,13 @@
       const [showWeights, setShowWeights] = useState(false);
       const [showCelebration, setShowCelebration] = useState(false);
       const [celebrationShown, setCelebrationShown] = useState(false);
+      const [darkMode, setDarkMode] = useState(() => loadJSON(STORAGE_KEYS.darkMode, false));
+
+      // Apply dark mode class to body
+      useEffect(() => {
+        document.body.classList.toggle("dark-mode", darkMode);
+        localStorage.setItem(STORAGE_KEYS.darkMode, JSON.stringify(darkMode));
+      }, [darkMode]);
 
       // Persist to localStorage
       useEffect(() => { localStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(tasks)); }, [tasks]);
@@ -632,9 +670,22 @@
           {/* Header */}
           <div className="mb-10">
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-bold text-slate-800 bg-gradient-to-r from-brand-600 to-brand-500 bg-clip-text text-transparent tracking-tight">Prioritizer</h1>
-                <p className="text-xs text-slate-400 mt-0.5">Score and rank your tasks</p>
+              <div className="flex items-center gap-3">
+                <div>
+                  <h1 className="text-xl font-bold text-slate-800 bg-gradient-to-r from-brand-600 to-brand-500 bg-clip-text text-transparent tracking-tight">Prioritizer</h1>
+                  <p className="text-xs text-slate-400 mt-0.5">Score and rank your tasks</p>
+                </div>
+                <button
+                  onClick={() => setDarkMode(!darkMode)}
+                  className="p-2 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition"
+                  title={darkMode ? "Light mode" : "Dark mode"}
+                >
+                  {darkMode ? (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                  )}
+                </button>
               </div>
               {totalTasks > 0 && (
                 <div className="text-right">
