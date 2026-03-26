@@ -4,6 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>To Do Prioritizer</title>
+  <meta name="description" content="AI-powered task prioritization tool with weighted scoring, drag-and-drop reordering, and smart prioritization presets.">
+  <meta property="og:title" content="To-Do Prioritizer — Smart Task Ranking">
+  <meta property="og:description" content="Score and rank your tasks using customizable urgency, importance, and effort weights. Drag-and-drop reordering and smart presets.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://nsurawski.github.io/PM-Portfolio/todo-prioritizer.html">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -626,6 +631,19 @@
         localStorage.setItem(STORAGE_KEYS.darkMode, JSON.stringify(darkMode));
       }, [darkMode]);
 
+      // Keyboard shortcut: "/" to focus task input
+      useEffect(() => {
+        const handleKey = (e) => {
+          if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
+          if (e.key === "/") {
+            e.preventDefault();
+            document.getElementById("task-input")?.focus();
+          }
+        };
+        document.addEventListener("keydown", handleKey);
+        return () => document.removeEventListener("keydown", handleKey);
+      }, []);
+
       // Persist to localStorage
       useEffect(() => { localStorage.setItem(STORAGE_KEYS.tasks, JSON.stringify(tasks)); }, [tasks]);
       useEffect(() => { localStorage.setItem(STORAGE_KEYS.weights, JSON.stringify(weights)); }, [weights]);
@@ -705,10 +723,18 @@
         const unprioritized = tasks.filter(t => t.status === "unprioritized");
         const active = tasks.filter(t => t.status === "active");
         const completed = tasks.filter(t => t.status === "completed");
-        const high = active.filter(t => t.priority === "high");
-        const med = active.filter(t => t.priority === "med");
-        const low = active.filter(t => t.priority === "low");
-        return { unprioritized, high, med, low, completed };
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const overdue = active.filter(t => {
+          if (!t.dueDate) return false;
+          const due = new Date(t.dueDate + "T00:00:00");
+          return due < today;
+        });
+        const overdueIds = new Set(overdue.map(t => t.id));
+        const high = active.filter(t => t.priority === "high" && !overdueIds.has(t.id));
+        const med = active.filter(t => t.priority === "med" && !overdueIds.has(t.id));
+        const low = active.filter(t => t.priority === "low" && !overdueIds.has(t.id));
+        return { unprioritized, overdue, high, med, low, completed };
       }, [tasks]);
 
       const weightLabels = ["Urgency", "Importance", "Effort"];
@@ -823,6 +849,9 @@
 
           {/* Task Sections */}
           <Section title="Unprioritized" tasks={sections.unprioritized} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} dragRef={dragRef} onReorder={handleReorder} />
+          {sections.overdue.length > 0 && (
+            <Section title="Overdue" tasks={sections.overdue} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} dragRef={dragRef} onReorder={handleReorder} />
+          )}
           <Section title="High Priority" tasks={sections.high} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} dragRef={dragRef} onReorder={handleReorder} />
           <Section title="Medium Priority" tasks={sections.med} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} dragRef={dragRef} onReorder={handleReorder} />
           <Section title="Low Priority" tasks={sections.low} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} dragRef={dragRef} onReorder={handleReorder} />
