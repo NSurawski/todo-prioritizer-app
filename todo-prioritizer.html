@@ -227,7 +227,7 @@
                     { label: "In 2 weeks", days: 14 },
                   ].map(({ label, days }) => {
                     const d = new Date(); d.setDate(d.getDate() + days);
-                    const val = d.toISOString().split("T")[0];
+                    const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                     return (
                       <button
                         key={label}
@@ -712,11 +712,24 @@
         }
         setWeights(newWeights);
         setActivePreset("");
+        rescoreTasks(newWeights);
+      };
+
+      const rescoreTasks = (newWeights) => {
+        setTasks(prev => prev.map(t => {
+          if (t.status !== "active") return t;
+          const score = calcScore(t, newWeights);
+          const priority = scoreToLabel(score);
+          const reasoning = generateReasoning(t, newWeights);
+          return { ...t, score, priority, reasoning };
+        }));
       };
 
       const applyPreset = (name) => {
-        setWeights([...PRESETS[name]]);
+        const newWeights = [...PRESETS[name]];
+        setWeights(newWeights);
         setActivePreset(name);
+        rescoreTasks(newWeights);
       };
 
       const sections = useMemo(() => {
