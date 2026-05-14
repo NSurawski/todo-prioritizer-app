@@ -759,12 +759,19 @@
           {showCelebration && <CelebrationOverlay onDismiss={() => setShowCelebration(false)} />}
           {/* Header */}
           <div className="mb-10">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div>
-                  <h1 className="text-xl font-bold text-slate-800 bg-gradient-to-r from-brand-600 to-brand-500 bg-clip-text text-transparent tracking-tight">Prioritizer</h1>
-                  <p className="text-xs text-slate-400 mt-0.5">Score and rank your tasks</p>
-                </div>
+            <div className="relative flex items-center justify-center">
+              <div className="text-center">
+                <h1 className="text-xl font-bold text-slate-800 bg-gradient-to-r from-brand-600 to-brand-500 bg-clip-text text-transparent tracking-tight">Prioritizer</h1>
+                <p className="text-xs text-slate-400 mt-0.5">Score and rank your tasks</p>
+              </div>
+              <div className="absolute right-0 flex items-center gap-2">
+                {totalTasks > 0 && (
+                  <div className="text-right">
+                    <span className="text-2xl font-bold text-brand-600">{completedCount}</span>
+                    <span className="text-sm text-slate-400">/{totalTasks}</span>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wider">done</p>
+                  </div>
+                )}
                 <button
                   onClick={() => setDarkMode(!darkMode)}
                   className="p-2 rounded-lg hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition"
@@ -778,13 +785,6 @@
                   )}
                 </button>
               </div>
-              {totalTasks > 0 && (
-                <div className="text-right">
-                  <span className="text-2xl font-bold text-brand-600">{completedCount}</span>
-                  <span className="text-sm text-slate-400">/{totalTasks}</span>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-wider">done</p>
-                </div>
-              )}
             </div>
 
             {/* Progress bar */}
