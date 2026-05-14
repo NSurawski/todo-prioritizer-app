@@ -691,6 +691,7 @@
       }, []);
 
       const dragRef = useRef(null);
+      const rescoreTimerRef = useRef(null);
       const handleReorder = useCallback((dragId, dropId) => {
         if (dragId === dropId) return;
         setTasks(prev => {
@@ -723,7 +724,8 @@
         }
         setWeights(newWeights);
         setActivePreset("");
-        rescoreTasks(newWeights);
+        clearTimeout(rescoreTimerRef.current);
+        rescoreTimerRef.current = setTimeout(() => rescoreTasks(newWeights), 80);
       };
 
       const rescoreTasks = (newWeights) => {
