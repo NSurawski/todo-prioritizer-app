@@ -364,6 +364,7 @@
       const [titleDraft, setTitleDraft] = useState(task.title);
       const [confirmDelete, setConfirmDelete] = useState(false);
       const [showSubtasks, setShowSubtasks] = useState((task.subtasks || []).length > 0);
+      const dueDateLabel = getDueDateLabel(task.dueDate);
 
       const saveTitle = () => {
         const trimmed = titleDraft.trim();
@@ -428,8 +429,8 @@
             )}
 
             {/* Due date */}
-            {task.dueDate && getDueDateLabel(task.dueDate) && (
-              <span className={`text-[11px] ${getDueDateLabel(task.dueDate).color}`}>{getDueDateLabel(task.dueDate).text}</span>
+            {dueDateLabel && (
+              <span className={`text-[11px] ${dueDateLabel.color}`}>{dueDateLabel.text}</span>
             )}
 
             {/* Score + Badge */}
