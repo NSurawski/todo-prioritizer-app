@@ -616,7 +616,17 @@
 
     // --- Main App ---
     function App() {
-      const [tasks, setTasks] = useState(() => loadJSON(STORAGE_KEYS.tasks, []));
+      const [tasks, setTasks] = useState(() => {
+        const saved = loadJSON(STORAGE_KEYS.tasks, []);
+        const savedWeights = loadJSON(STORAGE_KEYS.weights, [40, 40, 20]);
+        return saved.map(t => {
+          if (t.status !== "active") return t;
+          const score = calcScore(t, savedWeights);
+          const priority = scoreToLabel(score);
+          const reasoning = generateReasoning(t, savedWeights);
+          return { ...t, score, priority, reasoning };
+        });
+      });
       const [newTitle, setNewTitle] = useState("");
       const [weights, setWeights] = useState(() => loadJSON(STORAGE_KEYS.weights, [40, 40, 20]));
       const [activePreset, setActivePreset] = useState(() => loadJSON(STORAGE_KEYS.preset, "Balanced"));
