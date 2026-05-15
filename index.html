@@ -558,22 +558,29 @@
     }
 
     // --- Section ---
-    function Section({ icon, title, count, tasks, weights, onUpdate, onDelete, dragRef, onReorder, collapsible = false }) {
+    function Section({ icon, title, count, tasks, weights, onUpdate, onDelete, dragRef, onReorder, collapsible = false, onBulkAction, bulkActionLabel }) {
       const [collapsed, setCollapsed] = useState(collapsible);
       const [dragOverId, setDragOverId] = useState(null);
       if (tasks.length === 0) return null;
       return (
         <div className="mb-8">
-          <button
-            onClick={() => collapsible && setCollapsed(!collapsed)}
-            className={`flex items-center gap-2.5 mb-3 ${collapsible ? "cursor-pointer hover:opacity-80" : "cursor-default"} transition`}
-          >
-            <h2 className="text-xs font-bold text-slate-600 uppercase tracking-widest">{title}</h2>
-            <span className="text-[11px] text-brand-500 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-md font-semibold">{tasks.length}</span>
-            {collapsible && (
-              <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${collapsed ? "" : "rotate-90"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={() => collapsible && setCollapsed(!collapsed)}
+              className={`flex items-center gap-2.5 ${collapsible ? "cursor-pointer hover:opacity-80" : "cursor-default"} transition`}
+            >
+              <h2 className="text-xs font-bold text-slate-600 uppercase tracking-widest">{title}</h2>
+              <span className="text-[11px] text-brand-500 bg-brand-50 border border-brand-100 px-2 py-0.5 rounded-md font-semibold">{tasks.length}</span>
+              {collapsible && (
+                <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${collapsed ? "" : "rotate-90"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+              )}
+            </button>
+            {onBulkAction && (
+              <button onClick={onBulkAction} className="text-[11px] text-brand-500 hover:text-brand-700 font-semibold transition">
+                {bulkActionLabel}
+              </button>
             )}
-          </button>
+          </div>
           {!collapsed && (
             <div className="space-y-2">
               {tasks.map(t => (
@@ -741,6 +748,15 @@
 
       const handleDelete = useCallback((id) => {
         setTasks(prev => prev.filter(t => t.id !== id));
+      }, []);
+
+      const handlePrioritizeAll = useCallback(() => {
+        setTasks(prev => prev.map(t => {
+          if (t.status !== "unprioritized") return t;
+          const w = weightsRef.current;
+          const score = calcScore(t, w);
+          return { ...t, status: "active", score, priority: scoreToLabel(score), reasoning: generateReasoning(t, w) };
+        }));
       }, []);
 
       const dragRef = useRef(null);
@@ -927,7 +943,7 @@
           </div>
 
           {/* Task Sections */}
-          <Section title="Unprioritized" tasks={sections.unprioritized} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} dragRef={dragRef} onReorder={handleReorder} />
+          <Section title="Unprioritized" tasks={sections.unprioritized} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} dragRef={dragRef} onReorder={handleReorder} onBulkAction={handlePrioritizeAll} bulkActionLabel="Prioritize all" />
           {sections.overdue.length > 0 && (
             <Section title="Overdue" tasks={sections.overdue} weights={weights} onUpdate={handleUpdate} onDelete={handleDelete} dragRef={dragRef} onReorder={handleReorder} />
           )}
