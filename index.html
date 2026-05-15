@@ -128,9 +128,14 @@
       "Quick wins": [20, 30, 50],
     };
 
+    function getUrgency(task) {
+      if (!task.dueDate && task.urgencyOverride != null) return task.urgencyOverride;
+      return getUrgencyFromDate(task.dueDate);
+    }
+
     function calcScore(task, weights) {
       const [w1, w2, w3] = weights.map(w => w / 100);
-      const urgency = getUrgencyFromDate(task.dueDate);
+      const urgency = getUrgency(task);
       return urgency * w1 + task.importance * w2 + (6 - task.effort) * w3;
     }
 
@@ -142,7 +147,7 @@
 
     function generateReasoning(task, weights) {
       const [w1, w2, w3] = weights.map(w => w / 100);
-      const uScore = getUrgencyFromDate(task.dueDate) * w1;
+      const uScore = getUrgency(task) * w1;
       const iScore = task.importance * w2;
       const eScore = (6 - task.effort) * w3;
       const scores = [
@@ -186,14 +191,15 @@
       const [dueDate, setDueDate] = useState(task.dueDate || "");
       const [importance, setImportance] = useState(task.importance || 3);
       const [effort, setEffort] = useState(task.effort || 3);
+      const [urgencyOverride, setUrgencyOverride] = useState(task.urgencyOverride != null ? task.urgencyOverride : 3);
 
       const preview = useMemo(() => {
-        const t = { dueDate, importance, effort };
+        const t = { dueDate, importance, effort, urgencyOverride: dueDate ? null : urgencyOverride };
         const score = calcScore(t, weights);
         const label = scoreToLabel(score);
         const reasoning = generateReasoning(t, weights);
         return { score, label, reasoning };
-      }, [dueDate, importance, effort, weights]);
+      }, [dueDate, importance, effort, urgencyOverride, weights]);
 
       const labelStyles = {
         high: { bg: "bg-red-50", border: "border-red-200", text: "text-red-600", badge: "bg-red-500" },
@@ -245,6 +251,9 @@
                 </div>
               </div>
             </div>
+            {!dueDate && (
+              <DotSelector value={urgencyOverride} onChange={setUrgencyOverride} label="Urgency" activeColor="bg-red-500" />
+            )}
             <DotSelector value={importance} onChange={setImportance} label="Importance" activeColor="bg-brand-600" />
             <DotSelector value={effort} onChange={setEffort} label="Effort" activeColor="bg-amber-500" />
 
@@ -263,7 +272,7 @@
             <div className="flex gap-2 justify-end pt-1">
               <button onClick={onCancel} className="px-4 py-2.5 text-sm text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition font-medium">Cancel</button>
               <button
-                onClick={() => onSave({ dueDate, importance, effort, score: preview.score, priority: preview.label, reasoning: preview.reasoning })}
+                onClick={() => onSave({ dueDate, importance, effort, urgencyOverride: dueDate ? null : urgencyOverride, score: preview.score, priority: preview.label, reasoning: preview.reasoning })}
                 className="px-5 py-2.5 text-sm bg-brand-600 text-white rounded-lg hover:bg-slate-800 transition font-semibold shadow-sm"
               >
                 Save Priority
@@ -665,7 +674,7 @@
         if (!title) return;
         setTasks(prev => [...prev, {
           id: uuid(), title, status: "unprioritized",
-          dueDate: "", importance: 3, effort: 3,
+          dueDate: "", importance: 3, effort: 3, urgencyOverride: null,
           priority: null, score: null, reasoning: null,
           subtasks: [],
         }]);
