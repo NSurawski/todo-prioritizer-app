@@ -133,6 +133,13 @@
       return getUrgencyFromDate(task.dueDate);
     }
 
+    function advanceDueDate(dueDate, recurrence) {
+      const base = dueDate ? new Date(dueDate + "T00:00:00") : new Date();
+      if (recurrence === "weekly") base.setDate(base.getDate() + 7);
+      else if (recurrence === "monthly") base.setMonth(base.getMonth() + 1);
+      return `${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,'0')}-${String(base.getDate()).padStart(2,'0')}`;
+    }
+
     function calcScore(task, weights) {
       const [w1, w2, w3] = weights.map(w => w / 100);
       const urgency = getUrgency(task);
@@ -192,14 +199,15 @@
       const [importance, setImportance] = useState(task.importance || 3);
       const [effort, setEffort] = useState(task.effort || 3);
       const [urgencyOverride, setUrgencyOverride] = useState(task.urgencyOverride != null ? task.urgencyOverride : 3);
+      const [recurrence, setRecurrence] = useState(task.recurrence || null);
 
       const preview = useMemo(() => {
-        const t = { dueDate, importance, effort, urgencyOverride: dueDate ? null : urgencyOverride };
+        const t = { dueDate, importance, effort, urgencyOverride: dueDate ? null : urgencyOverride, recurrence };
         const score = calcScore(t, weights);
         const label = scoreToLabel(score);
         const reasoning = generateReasoning(t, weights);
         return { score, label, reasoning };
-      }, [dueDate, importance, effort, urgencyOverride, weights]);
+      }, [dueDate, importance, effort, urgencyOverride, recurrence, weights]);
 
       const labelStyles = {
         high: { bg: "bg-red-50", border: "border-red-200", text: "text-red-600", badge: "bg-red-500" },
@@ -251,6 +259,24 @@
                 </div>
               </div>
             </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[13px] font-medium text-slate-600 w-24">Repeats</span>
+              <div className="flex gap-1.5">
+                {[null, "weekly", "monthly"].map(val => (
+                  <button
+                    key={String(val)}
+                    onClick={() => setRecurrence(val)}
+                    className={`px-3 py-1.5 text-[11px] rounded-lg font-medium transition border ${
+                      recurrence === val
+                        ? "bg-brand-600 text-white border-brand-600 shadow-sm"
+                        : "bg-brand-50 text-brand-500 hover:bg-slate-200 border-slate-200"
+                    }`}
+                  >
+                    {val === null ? "None" : val.charAt(0).toUpperCase() + val.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
             {!dueDate && (
               <DotSelector value={urgencyOverride} onChange={setUrgencyOverride} label="Urgency" activeColor="bg-red-500" />
             )}
@@ -272,7 +298,7 @@
             <div className="flex gap-2 justify-end pt-1">
               <button onClick={onCancel} className="px-4 py-2.5 text-sm text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition font-medium">Cancel</button>
               <button
-                onClick={() => onSave({ dueDate, importance, effort, urgencyOverride: dueDate ? null : urgencyOverride, score: preview.score, priority: preview.label, reasoning: preview.reasoning })}
+                onClick={() => onSave({ dueDate, importance, effort, urgencyOverride: dueDate ? null : urgencyOverride, recurrence, score: preview.score, priority: preview.label, reasoning: preview.reasoning })}
                 className="px-5 py-2.5 text-sm bg-brand-600 text-white rounded-lg hover:bg-slate-800 transition font-semibold shadow-sm"
               >
                 Save Priority
@@ -440,6 +466,12 @@
             {/* Due date */}
             {dueDateLabel && (
               <span className={`text-[11px] ${dueDateLabel.color}`}>{dueDateLabel.text}</span>
+            )}
+            {task.recurrence && (
+              <span className="text-[10px] text-slate-400 flex items-center gap-0.5" title={`Repeats ${task.recurrence}`}>
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                {task.recurrence}
+              </span>
             )}
 
             {/* Score + Badge */}
@@ -639,6 +671,8 @@
       });
       const [newTitle, setNewTitle] = useState("");
       const [weights, setWeights] = useState(() => loadJSON(STORAGE_KEYS.weights, [40, 40, 20]));
+      const weightsRef = useRef(null);
+      weightsRef.current = weights;
       const [activePreset, setActivePreset] = useState(() => loadJSON(STORAGE_KEYS.preset, "Balanced"));
       const [showWeights, setShowWeights] = useState(false);
       const [showCelebration, setShowCelebration] = useState(false);
@@ -674,7 +708,7 @@
         if (!title) return;
         setTasks(prev => [...prev, {
           id: uuid(), title, status: "unprioritized",
-          dueDate: "", importance: 3, effort: 3, urgencyOverride: null,
+          dueDate: "", importance: 3, effort: 3, urgencyOverride: null, recurrence: null,
           priority: null, score: null, reasoning: null,
           subtasks: [],
         }]);
@@ -683,7 +717,14 @@
 
       const handleUpdate = useCallback((updated) => {
         setTasks(prev => {
-          const next = prev.map(t => t.id === updated.id ? updated : t);
+          let task = updated;
+          if (updated.status === "completed" && updated.recurrence) {
+            const w = weightsRef.current;
+            const newDueDate = advanceDueDate(updated.dueDate, updated.recurrence);
+            const t = { ...updated, dueDate: newDueDate, status: "active" };
+            task = { ...t, score: calcScore(t, w), priority: scoreToLabel(calcScore(t, w)), reasoning: generateReasoning(t, w) };
+          }
+          const next = prev.map(t => t.id === task.id ? task : t);
           // Check if all tasks are now completed
           if (next.length > 0 && next.every(t => t.status === "completed")) {
             setTimeout(() => {
